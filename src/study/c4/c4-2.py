@@ -1,14 +1,9 @@
-import os
-
 from langchain.chains.conversational_retrieval.base import ConversationalRetrievalChain
-from langchain.chains.retrieval_qa.base import RetrievalQA
 from langchain.memory import ConversationBufferMemory
-from langchain_core.prompts import PromptTemplate
+from langchain_chroma import Chroma
 from zhipuai import ZhipuAI
 
 from src.model.ZhipuAIEmbedding import ZhipuAIEmbeddings
-from langchain_chroma import Chroma
-
 from src.model.ZhipuAILLM import ZhipuAILLM
 
 client = ZhipuAI(api_key="5db19c1ae349cab11aff7a42bae9fbbb.vVLtpm7VpSf8WQDY")

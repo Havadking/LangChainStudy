@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class ZhipuAIEmbeddings(BaseModel, Embeddings):
     """ZhipuAI embedding models.
     Example:
-       .. code-block:: python
+       . code-block:: python
             from langchain.embeddings import ZhipuAIEmbeddings
             embeddings = ZhipuAIEmbeddings()
     """
