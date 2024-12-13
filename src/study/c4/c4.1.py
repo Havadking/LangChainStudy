@@ -1,4 +1,4 @@
-from langchain_core.output_parsers import StrOutputParser
+from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 
 from src.model.ZhipuAILLM import ZhipuAILLM
 from langchain_core.prompts import ChatPromptTemplate
@@ -29,11 +29,18 @@ text = "我带着比身体重的行李，\
 
 # Output parser（输出解析器）
 output_parser = StrOutputParser()
+JsonOutputParser()
 # parsed_output = output_parser.invoke(output)
 # print("output_parser :", parsed_output)
 
-chain = prompt | llm | output_parser
-output = chain.invoke({"input_language": "中文", "output_language": "英文", "text": text})
-print(output)
+# chain = prompt | llm | output_parser
+# output = chain.invoke({"input_language": "中文", "output_language": "英文", "text": text})
+# print(output)
+chain = prompt | llm
+stream = chain.stream({"input_language": "中文", "output_language": "英文", "text": text})
+full = next(stream)
+for chunk in stream:
+    full += chunk
+    print(full)
 
 
