@@ -112,18 +112,45 @@ graph_builder.add_edge("tools", "chatbot")
 graph_builder.add_edge(START, "chatbot")
 # graph_builder.add_edge("chatbot", END)
 
-graph = graph_builder.compile(checkpointer=memory)
+# 1.编译的时候添加记忆
+# 2.编译的时候添加 human-in-the-loop
+graph = graph_builder.compile(
+    checkpointer=memory,
+    interrupt_before=["tools"]
+)
 
 # 首先，选择一个线程作为本次对话的键
 config = {"configurable": {"thread_id": "1"}}
+user_input = "I'm learning LangGraph. Could you do some research on it for me?"
 
 # user_input = "Hi there! My name is Will."
-# # The config is the **second positional argument** to stream() or invoke()!
-#
-# events = graph.stream({"messages": [("user", user_input)]}, config=config, stream_mode="values")
-#
-# for event in events:
-#     event["messages"][-1].pretty_print()
+# The config is the **second positional argument** to stream() or invoke()!
+
+events = graph.stream({"messages": [("user", user_input)]}, config=config, stream_mode="values")
+
+for event in events:
+    if "messages" in event:
+        event["messages"][-1].pretty_print()
+    # print(event)
+
+# 在这里，当要调用tools的时候，暂停了
+snapshot = graph.get_state(config)
+print(snapshot.next)
+
+# 查看一下当前要进行的状态的内容
+existing_message = snapshot.values["messages"][-1]
+print(existing_message.tool_calls)
+
+# 然后继续手动执行
+events = graph.stream(None, config=config, stream_mode="values")
+
+for event in events:
+    if "messages" in event:
+        event["messages"][-1].pretty_print()
+
+
+
+
 #
 # user_input = "Remember my name?"
 #
@@ -150,20 +177,20 @@ def stream_graph_updates(user_input: str):
 
 
 
-while True:
-    try:
-        user_input = input("User: ")
-        if user_input.lower() in ["quit", "exit", "q"]:
-            print("Goodbye!")
-            break
-
-        stream_graph_updates(user_input)
-    except:
-        # fallback if input() is not available
-        user_input = "What do you know about LangGraph?"
-        print("User: " + user_input)
-        stream_graph_updates(user_input)
-        break
+# while True:
+#     try:
+#         user_input = input("User: ")
+#         if user_input.lower() in ["quit", "exit", "q"]:
+#             print("Goodbye!")
+#             break
+#
+#         stream_graph_updates(user_input)
+#     except:
+#         # fallback if input() is not available
+#         user_input = "What do you know about LangGraph?"
+#         print("User: " + user_input)
+#         stream_graph_updates(user_input)
+#         break
 
 
 
