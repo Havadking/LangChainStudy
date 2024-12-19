@@ -10,6 +10,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import tool
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.constants import START, END
 from langgraph.graph import StateGraph, MessagesState
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -86,8 +87,8 @@ Answer:
 """
 
 translate_template = """
-请将下面的内容从英文翻译为中文
-Context: {context}
+将下面的内容从英文翻译为中文。
+{context}
 """
 
 translate_prompt = PromptTemplate(
@@ -108,6 +109,7 @@ class State(TypedDict):
     answer: str
 
 
+
 graph_builder = StateGraph(MessagesState)
 
 
@@ -122,6 +124,27 @@ def retrieve(query: str):
     )
     return serialized, retrieved_docs
 
+
+# @tool(response_format="content")
+# def translate(query: str):
+#     """Translate English content into Chinese."""
+#     messages = translate_prompt.invoke(
+#         {
+#             "context": query
+#         }
+#     )
+#     response = llm.invoke(messages)
+#     return response.content
+
+
+def translate(state: MessagesState):
+    messages = translate_prompt.invoke(
+        {
+            "context": state["messages"][-1].content
+        }
+    )
+    response = llm.invoke(messages)
+    return {"messages": response}
 
 
 # Step 1: Generate an AIMessage that may include a tool-call to be sent.
@@ -172,9 +195,11 @@ def generate(state: MessagesState):
     return {"messages": [response]}
 
 
+
 graph_builder.add_node(query_or_response)
 graph_builder.add_node(tools)
 graph_builder.add_node(generate)
+graph_builder.add_node(translate)
 
 graph_builder.set_entry_point("query_or_response")
 graph_builder.add_conditional_edges(
@@ -184,14 +209,32 @@ graph_builder.add_conditional_edges(
 )
 graph_builder.add_edge("tools", "generate")
 graph_builder.add_edge("generate", END)
+graph_builder.add_edge("generate", "translate")
+graph_builder.add_edge("translate", END)
 
-graph = graph_builder.compile()
+# Add Memory
+memory = MemorySaver()
+graph = graph_builder.compile(checkpointer=memory)
+
+# Specify an ID for the thread
+config = {"configurable": {"thread_id": "abc123"}}
+
 
 input_message = "What is Task Decomposition?"
+input_message2 = "Can you look up some common ways of doing it?"
+# input_message = "What's 329993 divided by 13662?"
 
 for step in graph.stream(
     {"messages": [{"role": "user", "content": input_message}]},
     stream_mode="values",
+    config=config
+):
+    step["messages"][-1].pretty_print()
+
+for step in graph.stream(
+    {"messages": [{"role": "user", "content": input_message2}]},
+    stream_mode="values",
+    config=config
 ):
     step["messages"][-1].pretty_print()
 
