@@ -13,7 +13,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.constants import START, END
 from langgraph.graph import StateGraph, MessagesState
-from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.prebuilt import ToolNode, tools_condition, create_react_agent
 from typing_extensions import TypedDict
 from zhipuai import ZhipuAI
 
@@ -195,49 +195,77 @@ def generate(state: MessagesState):
     return {"messages": [response]}
 
 
-
-graph_builder.add_node(query_or_response)
-graph_builder.add_node(tools)
-graph_builder.add_node(generate)
-graph_builder.add_node(translate)
-
-graph_builder.set_entry_point("query_or_response")
-graph_builder.add_conditional_edges(
-    "query_or_response",
-    tools_condition,
-    {END: END, "tools": "tools"}
-)
-graph_builder.add_edge("tools", "generate")
-graph_builder.add_edge("generate", END)
-graph_builder.add_edge("generate", "translate")
-graph_builder.add_edge("translate", END)
-
-# Add Memory
+# Create Agent
 memory = MemorySaver()
-graph = graph_builder.compile(checkpointer=memory)
+agent_executor = create_react_agent(llm, [retrieve], checkpointer=memory)
 
-# Specify an ID for the thread
-config = {"configurable": {"thread_id": "abc123"}}
+# mermaid = agent_executor.get_graph().draw_mermaid()
+# print(mermaid)
 
+config = {"configurable": {"thread_id": "def234"}}
 
-input_message = "What is Task Decomposition?"
-input_message2 = "Can you look up some common ways of doing it?"
-# input_message = "What's 329993 divided by 13662?"
+# 关键区别在于，这里工具调用会循环回到最初的LLM调用，
+# 而不是以一个最终生成步骤结束运行。
+# 模型可以利用检索到的上下文来回答问题，
+# 或者生成另一个工具调用以获取更多信息。
+input_message = (
+    "What is the standard method for Task Decomposition?\n\n"
+    "Once you get the answer, look up common extensions of that method."
+)
 
-for step in graph.stream(
+for event in agent_executor.stream(
     {"messages": [{"role": "user", "content": input_message}]},
     stream_mode="values",
-    config=config
+    config=config,
 ):
-    step["messages"][-1].pretty_print()
+    event["messages"][-1].pretty_print()
 
-for step in graph.stream(
-    {"messages": [{"role": "user", "content": input_message2}]},
-    stream_mode="values",
-    config=config
-):
-    step["messages"][-1].pretty_print()
 
+
+
+
+# graph_builder.add_node(query_or_response)
+# graph_builder.add_node(tools)
+# graph_builder.add_node(generate)
+# graph_builder.add_node(translate)
+#
+# graph_builder.set_entry_point("query_or_response")
+# graph_builder.add_conditional_edges(
+#     "query_or_response",
+#     tools_condition,
+#     {END: END, "tools": "tools"}
+# )
+# graph_builder.add_edge("tools", "generate")
+# graph_builder.add_edge("generate", END)
+# graph_builder.add_edge("generate", "translate")
+# graph_builder.add_edge("translate", END)
+#
+# # Add Memory
+# memory = MemorySaver()
+# graph = graph_builder.compile(checkpointer=memory)
+#
+# # Specify an ID for the thread
+# config = {"configurable": {"thread_id": "abc123"}}
+#
+#
+# input_message = "What is Task Decomposition?"
+# input_message2 = "Can you look up some common ways of doing it?"
+# # input_message = "What's 329993 divided by 13662?"
+#
+# for step in graph.stream(
+#     {"messages": [{"role": "user", "content": input_message}]},
+#     stream_mode="values",
+#     config=config
+# ):
+#     step["messages"][-1].pretty_print()
+#
+# for step in graph.stream(
+#     {"messages": [{"role": "user", "content": input_message2}]},
+#     stream_mode="values",
+#     config=config
+# ):
+#     step["messages"][-1].pretty_print()
+#
 
 
 # # 定义执行步骤的方法
