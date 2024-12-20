@@ -203,7 +203,6 @@ agent_executor = create_react_agent(llm, [retrieve], checkpointer=memory)
 # print(mermaid)
 
 config = {"configurable": {"thread_id": "def234"}}
-
 # 关键区别在于，这里工具调用会循环回到最初的LLM调用，
 # 而不是以一个最终生成步骤结束运行。
 # 模型可以利用检索到的上下文来回答问题，
