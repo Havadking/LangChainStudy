@@ -1,11 +1,16 @@
 import json
 from typing import List
 
+from langchain_community.callbacks import OpenAICallbackHandler, get_openai_callback
+from langchain_core.callbacks import CallbackManager
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel, Field
 
+from src.model.DouBaoAILLM import DouBaoAILLM
 from src.model.ZhipuAILLM import ZhipuAILLM
+
+callback_manager = CallbackManager([OpenAICallbackHandler()])
 
 
 # 定义输出的格式
@@ -28,61 +33,47 @@ prompt = PromptTemplate(
     按照严格的 JSON 格式生成{num}道选择题，每题包含4个选项，其中只有1个正确答案，其他3个为具有一定迷惑性的错误答案。
     选项设置需符合 {carer} 学生的理解能力（小学、初中、高中），并确保问题和答案语言表达清晰、简洁。
     保持题目的趣味性和互动性，避免过于晦涩难懂。
+    题目内容需完全基于书籍内容。
+    适用阶段的知识范围和语言风格需要严格符合指定阶段。
     
-    每个问题必须包括：
+    生成的每个选择题必须严格的包括一下的字段：
         - question（问题）：问题的描述
         - options（选项）：该问题的选项，包括A、B、C、D是个选项
         - answer（答案）：该问题的正确答案
-    
-    示例输入：
-    
-        书名：哈利·波特与魔法石
-        适用阶段：初中
-        
-    示例输出：
-
-        问题：哈利第一次收到录取通知书时，它是通过什么方式送达的？
-        A. 猫头鹰邮递 
-        B. 魔法传送门
-        C. 学校特使送来
-        D. 普通邮件
-        正确答案：A
-
-        问题：海格从古灵阁取出的包裹中装了什么？
-        A. 一颗宝石
-        B. 魔法石
-        C. 魔杖
-        D. 隐形斗篷
-        正确答案：B
-
-        ……
 
     输出格式：{format_instructions}
 
-    注意事项：
-
-    题目内容需完全基于书籍内容。
-    适用阶段的知识范围和语言风格需要严格符合指定阶段。
-    执行格式： 将生成的选择题以清单形式输出，每题包括问题、选项（A/B/C/D）和正确答案。
     """,
-    input_variables=["book", "num", "carer"],
+    input_variables=["book", "num", "carer", "complexity"],
     partial_variables= {"format_instructions": parser.get_format_instructions()}
 )
 # 定义大模型
-llm = ZhipuAILLM()
+# llm = ZhipuAILLM()
+llm = DouBaoAILLM()
 # 组装成链
 chain  = prompt | llm | parser
+# chain = chain.bind(callback_manager=callback_manager, verbose=True)
 
 def generateQuestions(book:str, num:int, carer: str):
     print(f"开始生成《{book}》相关的题目")
-    output = chain.invoke(
-        {
-            "book": book,
-            "num": num,
-            "carer": carer
-        }
-    )
+    with get_openai_callback() as cb:
+        output = chain.invoke(
+            {
+                "book": book,
+                "num": num,
+                "carer": carer,
+            }
+        )
+        print(cb)
+
+    # print(output.usage_metadata)
+
     output_dict = output.dict()
+    # handler = callback_manager.handlers[0]
+    # print(f"Prompt Tokens: {handler.prompt_tokens}")
+    # print(f"Completion Tokens: {handler.completion_tokens}")
+    # print(f"Total Tokens: {handler.total_tokens}")
+    # print(f"Execution Time (s): {handler.execution_time}")
 
     # print(output_dict)
 
@@ -95,13 +86,13 @@ def generateQuestions(book:str, num:int, carer: str):
 
 
 if __name__ == '__main__':
-    books = ["三国演义", "钢铁是怎样炼成的", "麦田里的守望者", "瓦尔登湖"]
-    num_of_question = 5
-    for_who = "高中"
+    # books = ["三国演义", "钢铁是怎样炼成的", "麦田里的守望者", "瓦尔登湖", "活着"]
+    # num_of_question = 3
+    # for_who = "高中"
+    #
+    # for book in books:
+    #     generateQuestions(book, num_of_question, for_who)
 
-    for book in books:
-        generateQuestions(book, num_of_question, for_who)
-
-    generateQuestions(book, num_of_question, for_who)
+    generateQuestions("活着", 3, "高中")
 
 
