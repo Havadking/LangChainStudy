@@ -50,32 +50,7 @@ def read_json(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
-
-# 创建Word文档
-def create_word_from_json(json_data, output_path):
-    # 初始化Word文档
-    doc = Document()
-
-    # 设置标题
-    doc.add_heading('名著测试题', level=1)
-
-    # 遍历JSON数据创建内容
-    for idx, item in enumerate(json_data['questions'], start=1):
-        # 添加问题
-        doc.add_paragraph(f"{idx}. {item['question']}", style='Normal')
-
-        # 添加选项
-        for option in item['options']:
-            doc.add_paragraph(option, style='List Bullet')
-
-        # 添加答案
-        doc.add_paragraph(f"正确答案: {item['answer']}", style='Normal')
-
-    # 保存Word文件
-    doc.save(output_path)
-
-
-def convert_json_2_work(json_data, output_path):
+def convert_json_2_work(json_data, output_path, book_name):
     # 初始化Word文档
     doc = Document()
     # 设置编号样式
@@ -83,7 +58,7 @@ def convert_json_2_work(json_data, output_path):
 
     # 添加标题
     # title = doc.add_heading('《活着》名著测试题', level=1)
-    title = doc.add_paragraph('《活着》名著测试题')
+    title = doc.add_paragraph(book_name + '名著测试题')
     # 设置标题段落居中
     title.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
     # 设置字体样式
@@ -196,7 +171,7 @@ def convert_json_2_work(json_data, output_path):
                 option_run.font.size = Pt(12)  # 小四字体
 
     # 添加 "《幸福来临时》名著测试题" 字段
-    title_2 = doc.add_paragraph('《幸福来临时》名著测试题')
+    title_2 = doc.add_paragraph(book_name + '名著测试题')
     title_2.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER  # 居中
     run_2 = title_2.runs[0]
     run_2.font.name = '宋体（正文）'
@@ -286,20 +261,22 @@ def convert_json_2_work(json_data, output_path):
 
 
 # 主函数
-def main():
-    json_file = '/Users/macmini/PycharmProjects/LangChainStudy/src/study/活着.json'  # JSON文件路径
-    output_file = '/Users/macmini/Documents/题目/名著测试题.docx'  # 输出Word文件路径
+def create_docx(json_file, book_name):
+    # json_file = '/Users/macmini/PycharmProjects/LangChainStudy/src/study/三国演义.json'  # JSON文件路径
+
+    output_file = '/Users/macmini/Documents/题目/' + book_name +'名著测试题.docx'  # 输出Word文件路径
 
     # 读取JSON数据
     json_data = read_json(json_file)
 
     # 创建Word文档
-    convert_json_2_work(json_data, output_file)
+    convert_json_2_work(json_data, output_file, book_name)
     # create_word_from_json(json_data, output_file)
     print(f"Word文档已成功保存到: {output_file}")
+    return output_file
 
 
 if __name__ == "__main__":
     # json_file = '/Users/macmini/PycharmProjects/LangChainStudy/src/study/活着.json'
     # json_data = read_json(json_file)
-    main()
+    create_docx()
