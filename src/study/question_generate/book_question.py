@@ -128,6 +128,57 @@ def upload_word_file(file_path, cookie):
             print(f"An error occurred: {e}")
             return None
 
+def upload_paper(file_identity, cookie):
+    """
+    Upload paper metadata to the specified API.
+
+    Parameters:
+        file_identity (str): The file identity returned from the previous upload.
+        cookie (str): The cookie for authentication.
+
+    Returns:
+        response (requests.Response): The response from the API.
+    """
+    url = "http://rest-test.xxt.cn/xinzx-resource/paper-ingestion/paper-upload"
+    headers = {
+        "Cookie": cookie,
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "phaseCode": 311,
+        "subjectCode": 13,
+        "paperType": 6,
+        "versionCode": [17],
+        "gradeCode": 31,
+        "termCode": 1,
+        "paperSource": 900,
+        "paperPrivateInfos": [
+            {
+                "provinceCode": 1,
+                "cityCode": 371,
+                "year": 2024,
+                "etestMark": "AI自动生成",
+                "paperSeq": 1
+            }
+        ],
+        "tags": [],
+        "paperClassification": "1",
+        "quality": 0,
+        "fileIdentity": file_identity
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+
+        # Raise an HTTPError if the response indicates a failed request.
+        response.raise_for_status()
+        return response
+
+    except requests.exceptions.RequestException as e:
+        print(f"An error occurred: {e}")
+        return None
+
 
 
 
@@ -148,10 +199,23 @@ if __name__ == '__main__':
     file_path = "/Users/macmini/Documents/题目/《战争与和平》名著测试题.docx"  # Replace with the path to your Word file.
     cookie = "_did__=17152487570069092678608235675821; xxtSessionId=a3264da3ed08aacd4f09ec95596f4a2fa0ba38e3; NTKF_T2D_CLIENTID=guest12A1A814-5FEB-36A9-4F91-C00D5EEBAAA2; nTalk_CACHE_DATA={uid:kf_9115_ISME9754_guest12A1A814-5FEB-36,tid:1735005996705473}; schoolOrderGuide={%22province%22:1%2C%22isHbLT%22:false%2C%22isHbYD%22:false%2C%22guideOrderInSzjx%22:true%2C%22webId%22:%222319877%22}; XXT_ID=34013848; _XXT_ID=34013848; _LOGIN_MA_=lw%2d34017212%23ma%2dt%23rce%2df; XXT_TICKET=73cd7908dd124b524c59466a8039cd36850baa9e; _XSID_=73cd7908dd124b524c59466a8039cd36850baa9e; _SSID_=73cd7908dd124b524c59466a8039cd36850baa9e; sidebarStatus=0; _bgid__=3xTFNADYgKpcEHprBLPv7lgy8RcPTvVnZHEa63zZ8EBwr7YJyYt4q04fWWTNVKHx"  # Replace with your authentication cookie.
 
+    # 上传附件
     response = upload_word_file(file_path, cookie)
     if response:
         print("Upload successful! Response:")
         print(response.json().get("fileIdentity"))  # Assuming the API returns a JSON response.
+        file_identity = response.json().get("fileIdentity")
+
+        # 上传试卷
+        paper_response = upload_paper(file_identity, cookie)
+        if paper_response:
+            print("Paper uploaded successfully! Response:")
+            print(paper_response.json())
+        else:
+            print("Failed to upload paper metadata.")
+
+
+
     else:
         print("Upload failed.")
 
