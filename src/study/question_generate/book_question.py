@@ -9,6 +9,7 @@ from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel, Field
 
+from src.model.DeepSeekAILLM import DeepSeekAILLM
 from src.model.DouBaoAILLM import DouBaoAILLM
 from src.study.question_generate.json2word import create_docx
 
@@ -17,7 +18,7 @@ from src.study.question_generate.json2word import create_docx
 class Question(BaseModel):
     """question of the book."""
     question: str = Field(description="问题")
-    options: List[str] = Field(description="该问题的四个选项")
+    options: List[str] = Field(description="该问题的四个选项，格式为：'A．选项的内容' ")
     answer: str = Field(description="问题的答案", examples=["A", "B", "C", "D"])
 
 
@@ -50,7 +51,7 @@ prompt = PromptTemplate(
     
     生成的每个选择题必须严格的包括一下的字段：
         - question（问题）：问题的描述
-        - options（选项）：该问题的选项，包括A、B、C、D是个选项
+        - options（选项）：该问题的选项，包括A、B、C、D是个选项，格式为：'A．选项的内容'
         - answer（答案）：该问题的正确答案
         - knowledge（知识点）：该问题属于那个知识点，包括：语言运用、修辞鉴赏、内容理解、主题思想、文化常识
 
@@ -63,6 +64,7 @@ prompt = PromptTemplate(
 # 定义大模型
 # llm = ZhipuAILLM()
 llm = DouBaoAILLM()
+# llm = DeepSeekAILLM()
 # 组装成链
 chain = prompt | llm | parser
 
@@ -216,7 +218,7 @@ def generate_upload_paper(book: str):
 
 if __name__ == '__main__':
 
-    book = "西游记"
+    book = "骆驼祥子"
     start_time = time.time()
     generate_upload_paper(book=book)
     end_time = time.time()
