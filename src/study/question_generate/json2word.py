@@ -264,7 +264,7 @@ def convert_json_2_work(json_data, output_path, book_name):
 def create_docx(json_file, book_name):
     # json_file = '/Users/macmini/PycharmProjects/LangChainStudy/src/study/三国演义.json'  # JSON文件路径
 
-    output_file = '/Users/macmini/Documents/题目/' + book_name +'名著测试题.docx'  # 输出Word文件路径
+    output_file = '/Users/macmini/Documents/题目生成/' + book_name +'名著测试题.docx'  # 输出Word文件路径
 
     # 读取JSON数据
     json_data = read_json(json_file)
